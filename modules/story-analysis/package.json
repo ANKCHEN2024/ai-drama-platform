@@ -1,0 +1,41 @@
+{
+  "name": "@ai-drama/story-analysis",
+  "version": "1.0.0",
+  "description": "AI 短剧平台 - 故事分析模块",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:e2e": "jest tests/e2e",
+    "test:perf": "jest tests/performance",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix"
+  },
+  "keywords": [
+    "ai-drama",
+    "story-analysis",
+    "qwen",
+    "dashscope"
+  ],
+  "author": "西安谷风网络科技有限公司",
+  "license": "MIT",
+  "dependencies": {
+    "dashscope": "^1.0.0",
+    "crypto": "^1.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "eslint": "^8.0.0",
+    "supertest": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xfengtech/ai-drama-platform.git",
+    "directory": "modules/story-analysis"
+  }
+}

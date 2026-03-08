@@ -1,0 +1,502 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  draft
+  analyzing
+  character_building
+  scene_building
+  generating
+  completed
+  failed
+}
+
+enum EpisodeStatus {
+  draft
+  storyboard_ready
+  video_generating
+  audio_generating
+  composing
+  completed
+  failed
+}
+
+enum TaskStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}
+
+enum TaskType {
+  story_analyze
+  character_generate
+  scene_generate
+  storyboard_generate
+  video_generate
+  audio_synthesize
+  bgm_generate
+  video_compose
+}
+
+enum CharacterStatus {
+  active
+  inactive
+}
+
+enum SceneStatus {
+  active
+  inactive
+}
+
+enum StoryboardStatus {
+  draft
+  ready
+  generating
+  completed
+  failed
+}
+
+enum VideoClipStatus {
+  pending
+  generating
+  completed
+  failed
+}
+
+enum AudioStatus {
+  pending
+  synthesizing
+  completed
+  failed
+}
+
+enum VideoStatus {
+  pending
+  composing
+  completed
+  failed
+}
+
+model User {
+  id           BigInt   @id @default(autoincrement())
+  username     String   @unique @db.VarChar(50)
+  email        String   @unique @db.VarChar(100)
+  passwordHash String   @db.VarChar(255)
+  avatarUrl    String?  @db.VarChar(500)
+  phone        String?  @db.VarChar(20)
+  isActive     Boolean  @default(true)
+  role         String   @default("user") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime @default(now()) @db.Timestamp(6)
+
+  projects Project[]
+  tasks    Task[]
+
+  @@index([email])
+  @@index([username])
+}
+
+model Project {
+  id              BigInt        @id @default(autoincrement())
+  userId          BigInt
+  name            String        @db.VarChar(200)
+  description     String?
+  novelText       String?
+  episodeCount    Int           @default(10)
+  episodeDuration Int           @default(60)
+  videoRatio      String        @default("9:16") @db.VarChar(10)
+  videoQuality    String        @default("1080p") @db.VarChar(20)
+  status          ProjectStatus @default(draft)
+  settings        Json?         @db.JsonB
+  archivedAt      DateTime?     @db.Timestamp(6)
+  createdAt       DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime      @default(now()) @db.Timestamp(6)
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episodes   Episode[]
+  characters Character[]
+  scenes     Scene[]
+  tasks      Task[]
+  seasons    Season[]
+  EpisodeV2  EpisodeV2[]
+  scripts    Script[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([archivedAt])
+  @@index([createdAt])
+}
+
+model Episode {
+  id            BigInt        @id @default(autoincrement())
+  projectId     BigInt
+  episodeNumber Int
+  title         String?       @db.VarChar(200)
+  summary       String?
+  script        String?
+  status        EpisodeStatus @default(draft)
+  duration      Int?
+  createdAt     DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime      @default(now()) @db.Timestamp(6)
+
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  storyboards Storyboard[]
+  audios      Audio[]
+  bgms        Bgm[]
+  videos      Video[]
+
+  @@unique([projectId, episodeNumber])
+  @@index([projectId])
+  @@index([status])
+}
+
+model Character {
+  id          BigInt          @id @default(autoincrement())
+  projectId   BigInt
+  name        String          @db.VarChar(100)
+  description String?
+  appearance  String?
+  gender      String?         @db.VarChar(10)
+  ageRange    String?         @db.VarChar(20)
+  personality Json?           @db.JsonB
+  status      CharacterStatus @default(active)
+  createdAt   DateTime        @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime        @default(now()) @db.Timestamp(6)
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  characterImages CharacterImage[]
+  audios          Audio[]
+  scriptCharacters ScriptCharacter[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model CharacterImage {
+  id               BigInt   @id @default(autoincrement())
+  characterId      BigInt
+  imageUrl         String   @db.VarChar(500)
+  imageType        String?  @db.VarChar(50)
+  prompt           String?
+  generationParams Json?    @db.JsonB
+  createdAt        DateTime @default(now()) @db.Timestamp(6)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
+}
+
+model Scene {
+  id           BigInt      @id @default(autoincrement())
+  projectId    BigInt
+  name         String      @db.VarChar(100)
+  description  String?
+  locationType String?     @db.VarChar(50)
+  timeOfDay    String?     @db.VarChar(20)
+  atmosphere   String?     @db.VarChar(50)
+  visualStyle  String?
+  status       SceneStatus @default(active)
+  createdAt    DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime    @default(now()) @db.Timestamp(6)
+
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sceneImages SceneImage[]
+
+  @@index([projectId])
+}
+
+model SceneImage {
+  id               BigInt   @id @default(autoincrement())
+  sceneId          BigInt
+  imageUrl         String   @db.VarChar(500)
+  imageType        String?  @db.VarChar(50)
+  prompt           String?
+  generationParams Json?    @db.JsonB
+  createdAt        DateTime @default(now()) @db.Timestamp(6)
+
+  scene Scene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@index([sceneId])
+}
+
+model Storyboard {
+  id                BigInt           @id @default(autoincrement())
+  episodeId         BigInt
+  shotNumber        Int
+  description       String?
+  visualDescription String?
+  shotType          String?          @db.VarChar(50)
+  cameraAngle       String?          @db.VarChar(50)
+  cameraMovement    String?          @db.VarChar(50)
+  duration          Int?
+  dialogue          String?
+  action            String?
+  status            StoryboardStatus @default(draft)
+  createdAt         DateTime         @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime         @default(now()) @db.Timestamp(6)
+
+  episode    Episode     @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  videoClips VideoClip[]
+
+  @@unique([episodeId, shotNumber])
+  @@index([episodeId])
+}
+
+model VideoClip {
+  id               BigInt          @id @default(autoincrement())
+  storyboardId     BigInt
+  videoId          BigInt?
+  videoUrl         String          @db.VarChar(500)
+  sourceType       String?         @db.VarChar(50)
+  aiProvider       String?         @db.VarChar(50)
+  generationParams Json?           @db.JsonB
+  duration         Int?
+  status           VideoClipStatus @default(pending)
+  createdAt        DateTime        @default(now()) @db.Timestamp(6)
+
+  storyboard Storyboard @relation(fields: [storyboardId], references: [id], onDelete: Cascade)
+  video      Video?     @relation(fields: [videoId], references: [id], onDelete: SetNull)
+
+  @@index([storyboardId])
+  @@index([videoId])
+  @@index([status])
+}
+
+model Audio {
+  id              BigInt      @id @default(autoincrement())
+  episodeId       BigInt
+  characterId     BigInt?
+  audioUrl        String      @db.VarChar(500)
+  audioType       String?     @db.VarChar(50)
+  textContent     String?
+  voiceId         String?     @db.VarChar(50)
+  synthesisParams Json?       @db.JsonB
+  duration        Int?
+  status          AudioStatus @default(pending)
+  createdAt       DateTime    @default(now()) @db.Timestamp(6)
+
+  episode   Episode    @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  character Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+
+  @@index([episodeId])
+  @@index([characterId])
+}
+
+model Bgm {
+  id         BigInt   @id @default(autoincrement())
+  episodeId  BigInt
+  audioUrl   String   @db.VarChar(500)
+  musicStyle String?  @db.VarChar(50)
+  mood       String?  @db.VarChar(50)
+  duration   Int?
+  metadata   Json?    @db.JsonB
+  createdAt  DateTime @default(now()) @db.Timestamp(6)
+
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@index([episodeId])
+}
+
+model Video {
+  id                BigInt      @id @default(autoincrement())
+  episodeId         BigInt
+  videoUrl          String      @db.VarChar(500)
+  resolution        String?     @db.VarChar(20)
+  format            String?     @db.VarChar(20)
+  duration          Int?
+  fileSize          BigInt?
+  status            VideoStatus @default(pending)
+  compositionParams Json?       @db.JsonB
+  createdAt         DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime    @default(now()) @db.Timestamp(6)
+
+  episode    Episode     @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  videoClips VideoClip[]
+
+  @@index([episodeId])
+  @@index([status])
+}
+
+model Task {
+  id          BigInt     @id @default(autoincrement())
+  userId      BigInt
+  projectId   BigInt?
+  taskType    TaskType
+  status      TaskStatus @default(pending)
+  progress    Int        @default(0)
+  message     String?
+  metadata    Json?      @db.JsonB
+  createdAt   DateTime   @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime   @default(now()) @db.Timestamp(6)
+  completedAt DateTime?  @db.Timestamp(6)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Phase 3 P2 - 分季模型
+model Season {
+  id          BigInt    @id @default(autoincrement())
+  projectId   BigInt
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  number      Int // 季号
+  title       String // 标题
+  description String? // 描述
+  episodes    EpisodeV2[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([projectId, number])
+  @@index([projectId])
+}
+
+// Phase 3 P2 - 新的分集模型
+model EpisodeV2 {
+  id          BigInt    @id @default(autoincrement())
+  projectId   BigInt
+  seasonId    BigInt?
+  season      Season?   @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  project     Project   @relation(fields: [projectId], references: [id])
+  number      Int // 集号
+  title       String // 标题
+  description String? // 描述
+  status      String    @default("draft") // draft/recording/editing/completed
+  scenes      SceneV2[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([projectId, number])
+  @@index([projectId])
+  @@index([seasonId])
+  @@index([status])
+}
+
+// Phase 3 P2 - 新的分镜模型
+model SceneV2 {
+  id        BigInt    @id @default(autoincrement())
+  episodeId BigInt
+  episode   EpisodeV2 @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  number    Int // 场号
+  location  String // 场景（内/外）
+  timeOfDay String // 时间（日/夜）
+  content   String // 分镜内容描述
+  dialogue  String? // 对话
+  duration  Int? // 预计时长（秒）
+  status    String    @default("draft") // draft/filming/completed
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  videoGenerations VideoGeneration[]
+
+  @@unique([episodeId, number])
+  @@index([episodeId])
+  @@index([status])
+}
+
+// Phase 3 P3 - 视频生成模块
+model VideoGeneration {
+  id           String   @id @default(uuid())
+  sceneId      BigInt
+  scene        SceneV2  @relation(fields: [sceneId], references: [id])
+  status       String   @default("pending") // pending/processing/completed/failed
+  progress     Int      @default(0) // 0-100
+  videoUrl     String?  @db.VarChar(500) // 生成的视频 URL
+  thumbnailUrl String?  @db.VarChar(500) // 缩略图
+  duration     Int?     // 视频时长（秒）
+  errorMessage String?
+  config       Json?    @db.JsonB // 生成配置（模板、参数等）
+  externalTaskId String? @db.VarChar(100) // 外部 API 任务 ID
+  provider     String?  @db.VarChar(50) // 视频生成提供商
+  startedAt    DateTime? @db.Timestamp(6)
+  completedAt  DateTime? @db.Timestamp(6)
+  createdAt    DateTime @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime @updatedAt
+
+  @@index([sceneId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model VideoTemplate {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(500)
+  category    String   @db.VarChar(50) // categories: intro/outro/transitions/effects/common
+  duration    Int      // 模板时长（秒）
+  thumbnail   String?  @db.VarChar(500)
+  config      Json     @db.JsonB // 模板配置参数
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
+
+// Phase 3 P3 - 剧本管理模块
+model Script {
+  id          BigInt      @id @default(autoincrement())
+  projectId   BigInt
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String      @db.VarChar(200)
+  description String?     @db.Text
+  content     String      @db.Text
+  version     Int         @default(1)
+  status      ScriptStatus @default(draft)
+  createdAt   DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime    @default(now()) @db.Timestamp(6)
+
+  characters  ScriptCharacter[]
+  versions    ScriptVersion[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ScriptStatus {
+  draft
+  published
+  archived
+}
+
+model ScriptVersion {
+  id        BigInt   @id @default(autoincrement())
+  scriptId  BigInt
+  script    Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  version   Int
+  content   String   @db.Text
+  changeLog String?  @db.VarChar(500)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([scriptId, version])
+  @@index([scriptId])
+}
+
+model ScriptCharacter {
+  scriptId    BigInt
+  script      Script    @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  characterId BigInt
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now()) @db.Timestamp(6)
+
+  @@id([scriptId, characterId])
+  @@index([scriptId])
+  @@index([characterId])
+}
+
+

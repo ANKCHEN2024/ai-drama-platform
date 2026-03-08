@@ -1,0 +1,39 @@
+{
+  "name": "@ai-drama/character-builder",
+  "version": "1.0.0",
+  "description": "AI 短剧平台 - 人物构建模块",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest tests/",
+    "test:coverage": "jest --coverage",
+    "test:integration": "jest tests/integration/",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "doc": "jsdoc src/ -d docs/"
+  },
+  "keywords": [
+    "ai-drama",
+    "character",
+    "builder",
+    "qwen",
+    "dashscope"
+  ],
+  "author": "Subagent-03",
+  "license": "MIT",
+  "dependencies": {
+    "dashscope": "^1.0.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "jsdoc": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ai-drama-platform/character-builder"
+  }
+}
