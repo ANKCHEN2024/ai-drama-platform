@@ -56,6 +56,10 @@ const verificationTokens = new Map<string, {
 
 function sanitizeUser(user: any) {
   const { passwordHash, ...sanitized } = user;
+  // 处理 BigInt 类型（PostgreSQL 的 bigint 会被 prisma 转为 BigInt）
+  if (sanitized.id && typeof sanitized.id === 'bigint') {
+    sanitized.id = Number(sanitized.id);
+  }
   return sanitized;
 }
 
